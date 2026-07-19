@@ -19,7 +19,8 @@
     items: [],
     activeCategory: '全部',
     query: '',
-    loading: false
+    loading: false,
+    view: 'list'
   };
 
   var els = {
@@ -33,7 +34,10 @@
     modalCn: document.getElementById('modal-cn'),
     modalTags: document.getElementById('modal-tags'),
     modalBody: document.getElementById('modal-body'),
-    modalClose: document.getElementById('modal-close')
+    modalClose: document.getElementById('modal-close'),
+    graphWrap: document.getElementById('graph-wrap'),
+    graphContainer: document.getElementById('graph-container'),
+    viewBtns: Array.prototype.slice.call(document.querySelectorAll('.view-btn'))
   };
 
   /* ── 工具函数 ── */
@@ -143,6 +147,7 @@
     els.grid.textContent = '';
     if (!state.loading && items.length === 0) {
       els.grid.appendChild(el('p', 'empty-hint', '没有匹配的内容，换个关键词或分类试试。'));
+      updateGraph();
       return;
     }
     items.forEach(function (item) {
@@ -179,7 +184,220 @@
 
       els.grid.appendChild(card);
     });
+
+    updateGraph();
   }
+
+  /* ── 图谱视图（force-graph 2D，库缺失时降级回列表） ── */
+
+  var VIEW_KEY = 'eahub-view';
+  var graphState = { fg: null, failed: false, needsFit: true };
+  var CAT_COLOR_VARS = ['--cat-concept', '--cat-quantum', '--cat-history', '--cat-astro'];
+  var CAT_COLOR_FALLBACK = ['#c9a04f', '#6fa8c9', '#b08d68', '#9d8bd4'];
+  var catColorCache = null;
+
+  function catColor(cat) {
+    if (!catColorCache) {
+      catColorCache = CAT_COLOR_FALLBACK.slice();
+      try {
+        var cs = getComputedStyle(document.documentElement);
+        CAT_COLOR_VARS.forEach(function (v, i) {
+          var val = cs.getPropertyValue(v).trim();
+          if (val) catColorCache[i] = val;
+        });
+      } catch (e) { /* 忽略，用回退色 */ }
+    }
+    var i = categoryIndex(cat);
+    return catColorCache[i] || catColorCache[0];
+  }
+
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById('eahub-toast');
+    if (!t) {
+      t = el('div', 'toast');
+      t.id = 'eahub-toast';
+      t.setAttribute('role', 'alert');
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3000);
+  }
+
+  function nodeDegreeMap(items) {
+    var names = {};
+    items.forEach(function (it) { if (it && it.name) names[it.name] = true; });
+    var deg = {};
+    var links = [];
+    var seen = {};
+    items.forEach(function (it) {
+      if (!it || !it.name) return;
+      splitTags(it.links).forEach(function (target) {
+        if (!names[target] || target === it.name) return;
+        var key = it.name < target ? it.name + '' + target : target + '' + it.name;
+        if (seen[key]) return;
+        seen[key] = true;
+        links.push({ source: it.name, target: target });
+        deg[it.name] = (deg[it.name] || 0) + 1;
+        deg[target] = (deg[target] || 0) + 1;
+      });
+    });
+    return { deg: deg, links: links };
+  }
+
+  function buildGraphData(items) {
+    var built = nodeDegreeMap(items);
+    var nodes = items
+      .filter(function (it) { return it && it.name; })
+      .map(function (it) {
+        return { id: it.name, name: it.name, category: it.category, degree: built.deg[it.name] || 0, item: it };
+      });
+    var maxDeg = 1;
+    nodes.forEach(function (n) { if (n.degree > maxDeg) maxDeg = n.degree; });
+    nodes.forEach(function (n) {
+      n.size = 2.6 + 3.4 * Math.sqrt(n.degree / maxDeg);
+      n.hot = n.degree >= 15;
+    });
+    return { nodes: nodes, links: built.links };
+  }
+
+  function drawGraphNode(node, ctx, globalScale) {
+    var color = catColor(node.category);
+    var r = node.size;
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r + 1.2, 0, 2 * Math.PI, false);
+    ctx.fillStyle = 'rgba(7, 10, 19, 0.55)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    /* 标签：高度数节点常显，其余随缩放渐显 */
+    var label = node.name;
+    var alpha;
+    if (node.hot) {
+      alpha = 0.95;
+    } else {
+      alpha = Math.min(Math.max((globalScale - 1.15) / 0.9, 0), 1) * 0.9;
+    }
+    if (alpha > 0.02 && label) {
+      var fontSize = Math.max(10 / globalScale, 2.4) + (node.hot ? 0.6 : 0);
+      ctx.font = fontSize + 'px "Noto Sans SC", "PingFang SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.fillStyle = '#05070d';
+      ctx.fillText(label, node.x, node.y + r + 1.4 + 0.5);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ece7db';
+      ctx.fillText(label, node.x, node.y + r + 1.4);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function paintNodePointerArea(node, color, ctx) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, Math.max(node.size + 2.5, 4), 0, 2 * Math.PI, false);
+    ctx.fill();
+  }
+
+  function ensureGraph() {
+    if (graphState.fg) return true;
+    if (graphState.failed) return false;
+    if (typeof window.ForceGraph !== 'function') {
+      graphState.failed = true;
+      return false;
+    }
+    try {
+      var fg = window.ForceGraph()(els.graphContainer);
+      fg.backgroundColor('rgba(0,0,0,0)')
+        .nodeCanvasObject(drawGraphNode)
+        .nodePointerAreaPaint(paintNodePointerArea)
+        .nodeLabel(function (n) { return n.name + (n.degree ? ' · 连接 ' + n.degree : ''); })
+        .linkColor(function () { return 'rgba(165, 173, 189, 0.16)'; })
+        .linkWidth(0.5)
+        .linkDirectionalParticles(0)
+        .onNodeClick(function (n) {
+          if (n && n.item) openModal(n.item);
+        })
+        .onNodeHover(function (n) {
+          els.graphContainer.style.cursor = n ? 'pointer' : '';
+        })
+        .cooldownTicks(120)
+        .d3VelocityDecay(0.32);
+      graphState.fg = fg;
+      resizeGraph();
+      return true;
+    } catch (e) {
+      graphState.failed = true;
+      graphState.fg = null;
+      return false;
+    }
+  }
+
+  function resizeGraph() {
+    if (!graphState.fg || !els.graphWrap) return;
+    var w = els.graphWrap.clientWidth;
+    var h = els.graphWrap.clientHeight;
+    if (w > 0 && h > 0) graphState.fg.width(w).height(h);
+  }
+
+  window.addEventListener('resize', resizeGraph);
+
+  function updateGraph() {
+    if (state.view !== 'graph') return;
+    if (!ensureGraph()) return;
+    var data = buildGraphData(visibleItems());
+    graphState.fg.graphData(data);
+    resizeGraph();
+    if (graphState.needsFit && data.nodes.length > 0) {
+      graphState.needsFit = false;
+      setTimeout(function () {
+        if (graphState.fg) {
+          try { graphState.fg.zoomToFit(500, 44); } catch (e) { /* 忽略 */ }
+        }
+      }, 700);
+    }
+  }
+
+  function setView(view, skipSave) {
+    if (view === 'graph' && !ensureGraph()) {
+      showToast('图谱模式暂不可用，已切回列表');
+      view = 'list';
+    }
+    state.view = view;
+    if (!skipSave) {
+      try { localStorage.setItem(VIEW_KEY, view); } catch (e) { /* 忽略 */ }
+    }
+    els.viewBtns.forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-view') === view);
+    });
+    var isGraph = view === 'graph';
+    els.grid.hidden = isGraph;
+    els.graphWrap.hidden = !isGraph;
+    if (isGraph) {
+      graphState.needsFit = true;
+      updateGraph();
+    }
+  }
+
+  els.viewBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setView(btn.getAttribute('data-view'));
+    });
+  });
+
+  (function restoreView() {
+    var saved = 'list';
+    try { saved = localStorage.getItem(VIEW_KEY) || 'list'; } catch (e) { /* 忽略 */ }
+    if (saved === 'graph') setView('graph', true);
+  })();
 
   /* ── Markdown 渲染（marked + DOMPurify，CDN 失败降级 <pre>） ── */
 

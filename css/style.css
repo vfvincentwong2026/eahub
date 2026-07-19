@@ -640,11 +640,119 @@ body.modal-open { overflow: hidden; }
   .header-tools { width: 100%; justify-content: stretch; }
   .search-box { max-width: none; }
   .github-link { flex-shrink: 0; }
-  .chips-bar { padding: 14px 16px 2px; gap: 8px; }
+  .controls-bar { padding: 14px 16px 2px; }
+  .chips-bar { gap: 8px; }
   .container { padding: 6px 16px 44px; }
   .card-grid { grid-template-columns: 1fr; gap: 14px; }
+  .graph-wrap { height: calc(100vh - 260px); min-height: 380px; }
   .modal-overlay { padding: 3vh 10px 4vh; }
   .modal-header { padding: 18px 18px 12px; }
   .modal-body { padding: 16px 18px 24px; max-height: 70vh; }
   .modal-head-text h2 { font-size: 21px; }
+}
+
+/* ── 视图切换（列表 | 图谱） ── */
+.controls-bar {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 20px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.controls-bar .chips-bar {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  flex-shrink: 0;
+}
+
+.view-btn {
+  padding: 5px 16px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-chip);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.view-btn:hover { color: var(--text-primary); }
+
+.view-btn.active {
+  color: #12100a;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  font-weight: 600;
+}
+
+/* ── 图谱视图 ── */
+.card-grid[hidden],
+.graph-wrap[hidden] { display: none; }
+
+.graph-wrap {
+  position: relative;
+  height: calc(100vh - 300px);
+  min-height: 460px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: rgba(7, 10, 19, 0.45);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#graph-container { position: absolute; inset: 0; }
+
+#graph-container canvas { display: block; }
+
+.graph-tooltip {
+  font-family: var(--font-sans) !important;
+  font-size: 12.5px !important;
+  color: var(--text-primary) !important;
+  background: rgba(13, 19, 34, 0.94) !important;
+  border: 1px solid var(--gold-line);
+  border-radius: 8px;
+  padding: 5px 10px !important;
+}
+
+/* ── 轻提示 toast ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 34px;
+  transform: translate(-50%, 12px);
+  z-index: 120;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: rgba(19, 25, 41, 0.94);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-chip);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }

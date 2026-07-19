@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script defer src="vendor/force-graph.min.js"></script>
   <script defer src="js/app.js"></script>
 </head>
 <body>
@@ -40,11 +41,20 @@
     </div>
   </header>
 
-  <nav class="chips-bar" id="category-chips" aria-label="分类筛选"></nav>
+  <div class="controls-bar">
+    <nav class="chips-bar" id="category-chips" aria-label="分类筛选"></nav>
+    <div class="view-switch" role="group" aria-label="视图切换">
+      <button class="view-btn active" type="button" data-view="list">列表</button>
+      <button class="view-btn" type="button" data-view="graph">图谱</button>
+    </div>
+  </div>
 
   <main class="container">
     <p class="status-line" id="status-line" role="status">正在连接知识库…</p>
     <section class="card-grid" id="card-grid" aria-live="polite"></section>
+    <section class="graph-wrap" id="graph-wrap" hidden aria-label="知识图谱">
+      <div id="graph-container"></div>
+    </section>
   </main>
 
   <div class="modal-overlay" id="modal-overlay" hidden>
