@@ -1,0 +1,8 @@
+{
+  "name": "eahub-holosophy",
+  "compatibility_date": "2026-07-19",
+  "assets": { "directory": "./" },
+  "routes": [
+    { "pattern": "hub.eastastar.com", "custom_domain": true }
+  ]
+}
