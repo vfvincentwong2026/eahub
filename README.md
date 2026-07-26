@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/vfvincentwong2026/eahub?include_prereleases" alt="GitHub release">
+  <img src="https://img.shields.io/github/stars/vfvincentwong2026/eahub?style=social" alt="GitHub stars">
+  <!-- 其他徽章保持不变 -->
+</p>
+
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <img src="https://img.shields.io/github/stars/vfvincentwong2026/eahub?style=social" alt="GitHub stars">
@@ -34,6 +40,15 @@ The HoloSophy knowledge base contains a wealth of structured information, but pr
 - 🔗 **One‑click deploy** – Host on any static service (GitHub Pages, Vercel, Netlify, etc.).
 
 ---
+## 📦 Version · 版本
+
+**Current stable release:** [v1.0.0](https://github.com/vfvincentwong2026/eahub/releases/tag/v1.0.0)  
+We follow [Semantic Versioning](https://semver.org/).  
+Check the [Releases page](https://github.com/vfvincentwong2026/eahub/releases) for all versions and changelogs.
+
+**当前稳定版本：** [v1.0.0](https://github.com/vfvincentwong2026/eahub/releases/tag/v1.0.0)  
+我们遵循[语义化版本](https://semver.org/lang/zh-CN/)。  
+所有版本及更新日志请查看 [Releases 页面](https://github.com/vfvincentwong2026/eahub/releases)。
 
 ## 🎮 Quick Start (Playground)
 
