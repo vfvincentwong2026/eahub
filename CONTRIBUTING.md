@@ -1,3 +1,15 @@
+## 📦 Release process (for maintainers)
+
+If you're a maintainer and ready to cut a new release:
+
+1. Make sure all changes for the release are merged into the `main` branch.
+2. Update the version number in `js/config.js` (if applicable) and any other files that reference it.
+3. Create a new tag following Semantic Versioning, e.g. `v1.0.0`:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+
+
 # 🦄 Hey there, future contributor!
 
 Welcome to the **EAHub** party! We're super glad you're here.  
@@ -127,6 +139,18 @@ And hey – once your PR is merged, you'll be listed as a contributor. You'll al
 Now go forth and make EAHub even more awesome!
 
 Happy coding! 🚀
+
+## 📦 Release process (for maintainers)
+
+If you're a maintainer and ready to cut a new release:
+
+1. Make sure all changes for the release are merged into the `main` branch.
+2. Update the version number in `js/config.js` (if applicable) and any other files that reference it.
+3. Create a new tag following Semantic Versioning, e.g. `v1.0.0`:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+
 
 🇨🇳 中文版 · Chinese Version
 以下为完整中文翻译，供中文开发者参考。
